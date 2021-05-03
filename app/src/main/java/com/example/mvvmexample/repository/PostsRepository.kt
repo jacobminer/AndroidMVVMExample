@@ -7,9 +7,7 @@ import com.example.mvvmexample.model.PostList
 import com.example.mvvmexample.service.PostsService
 import com.example.mvvmexample.ui.LoadState
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
@@ -20,10 +18,13 @@ class PostsRepository(
     private val postsService: PostsService,
     private val cacheService: CacheService
 ) {
-    private val mutablePostsState = MutableStateFlow<List<Post>>(emptyList())
+    private val mutablePostsState = MutableSharedFlow<List<Post>>(replay = 1)
     private val mutableLoadState = MutableStateFlow<LoadState?>(null)
 
     val loadState = mutableLoadState.asStateFlow()
+
+    // in memory list of deleted posts
+    private val deletedPosts = mutableSetOf<Int>()
 
     fun fetchPosts(cacheMode: CacheMode = CacheMode.CacheAndUpdate) = GlobalScope.launch {
         mutableLoadState.emit(LoadState.Loading)
@@ -36,19 +37,26 @@ class PostsRepository(
 
         try {
             val posts = postsService.fetchPosts()
-            mutablePostsState.emit(posts)
+            val filteredPosts = posts.filter { !deletedPosts.contains(it.id) }
+            mutablePostsState.emit(filteredPosts)
             mutableLoadState.emit(LoadState.Success)
-            if (posts.isNotEmpty()) {
-                cacheService.updateCache(PostsKey, PostList(posts))
+            if (filteredPosts.isNotEmpty()) {
+                cacheService.updateCache(PostsKey, PostList(filteredPosts))
             }
         } catch (e: Exception) {
             mutableLoadState.emit(LoadState.Error(e))
         }
     }
 
-    fun postsFlow(cacheMode: CacheMode = CacheMode.CacheAndUpdate): StateFlow<List<Post>> {
+    fun postsFlow(cacheMode: CacheMode = CacheMode.CacheAndUpdate): SharedFlow<List<Post>> {
         fetchPosts(cacheMode)
         return mutablePostsState
+    }
+
+    fun deletePost(id: Int) {
+        deletedPosts.add(id)
+        cacheService.removeFromCache(PostsKey)
+        fetchPosts(CacheMode.CacheAndUpdate)
     }
 
     companion object {

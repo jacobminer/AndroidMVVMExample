@@ -42,7 +42,7 @@ class MainViewModel @Inject constructor(
         // maps the list of posts from the postsRepo to a private member variable
         viewModelScope.launch {
             postsRepository.postsFlow(CacheMode.CacheAndUpdate).collect {
-                posts = it.toMutableList()
+                posts = it.toMutableList().sortedBy { it.id }
                 if (posts.isNotEmpty()) {
                     // when the posts aren't empty, fetch the list of users
                     val userIds = it.map { it.userId }.toSet()
@@ -57,8 +57,9 @@ class MainViewModel @Inject constructor(
         postsRepository.fetchPosts()
     }
 
-    // increments the counter
-    fun incrementTapped() = viewModelScope.launch {
-
+    // emulates deleting a post
+    fun deleteTapped() = viewModelScope.launch {
+        val post = posts.firstOrNull() ?: return@launch
+        postsRepository.deletePost(post.id)
     }
 }

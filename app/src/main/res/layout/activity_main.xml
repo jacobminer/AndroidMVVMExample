@@ -39,8 +39,8 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toEndOf="@id/refreshButton"
             app:layout_constraintEnd_toEndOf="parent"
-            android:onClick="@{() -> viewModel.incrementTapped()}"
-            android:text="Increment"/>
+            android:onClick="@{() -> viewModel.deleteTapped()}"
+            android:text="Delete Post"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

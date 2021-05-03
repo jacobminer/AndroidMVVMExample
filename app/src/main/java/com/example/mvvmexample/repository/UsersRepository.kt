@@ -7,9 +7,7 @@ import com.example.mvvmexample.model.UserList
 import com.example.mvvmexample.service.UsersService
 import com.example.mvvmexample.ui.LoadState
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.lang.Exception
 
@@ -21,10 +19,10 @@ class UsersRepository(
     private val usersService: UsersService,
     private val cacheService: CacheService
 ) {
-    private val mutableUsersState = MutableStateFlow<List<User>>(emptyList())
-    private val mutableLoadState = MutableStateFlow<LoadState?>(null)
+    private val mutableUsersState = MutableSharedFlow<List<User>>(replay = 1)
+    private val mutableLoadState = MutableSharedFlow<LoadState?>(replay = 1)
 
-    val loadState = mutableLoadState.asStateFlow()
+    val loadState = mutableLoadState.asSharedFlow()
 
     fun fetchUsers(userIds: Set<Int>, cacheMode: CacheMode = CacheMode.CacheAndUpdate) = GlobalScope.launch {
         mutableLoadState.emit(LoadState.Loading)
@@ -47,8 +45,8 @@ class UsersRepository(
         }
     }
 
-    fun usersFlow(): StateFlow<List<User>> {
-        return mutableUsersState.asStateFlow()
+    fun usersFlow(): SharedFlow<List<User>> {
+        return mutableUsersState.asSharedFlow()
     }
 
     companion object {
