@@ -38,4 +38,9 @@ class InMemoryCacheService: CacheService {
     override fun clearCache() {
         cachedData.clear()
     }
+
+    // remove a single value from the cache
+    override fun removeFromCache(key: String) {
+        cachedData.remove(key)
+    }
 }

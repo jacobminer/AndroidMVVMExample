@@ -10,6 +10,7 @@ import android.os.Parcelable
 interface CacheService {
     suspend fun readFromCache(key: String, cacheMode: CacheMode): CacheResult<Parcelable>?
     fun updateCache(key: String, value: Parcelable)
+    fun removeFromCache(key: String)
     fun clearCache()
 }
 
