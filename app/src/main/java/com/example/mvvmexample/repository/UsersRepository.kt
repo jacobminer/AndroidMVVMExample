@@ -39,7 +39,9 @@ class UsersRepository(
             val users = usersService.fetchUsers().filter { userIds.contains(it.id) }
             mutableUsersState.emit(users)
             mutableLoadState.emit(LoadState.Success)
-            cacheService.updateCache(UsersKey, UserList(users))
+            if (users.isNotEmpty()) {
+                cacheService.updateCache(UsersKey, UserList(users))
+            }
         } catch (e: Exception) {
             mutableLoadState.emit(LoadState.Error(e))
         }

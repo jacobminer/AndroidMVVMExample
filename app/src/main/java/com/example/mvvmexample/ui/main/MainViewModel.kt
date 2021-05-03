@@ -4,13 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.mvvmexample.cache.CacheMode
+import com.example.mvvmexample.model.Post
 import com.example.mvvmexample.repository.PostsRepository
 import com.example.mvvmexample.repository.UsersRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,26 +22,35 @@ class MainViewModel @Inject constructor(
     private val usersRepository: UsersRepository,
     private val postsRepository: PostsRepository
 ): ViewModel() {
-    // this maps the counterState flow to a liveData for view consumption
-    // as soon as counterState changes, mapLatest will be called, and the result will be
-    // sent via the exampleText LiveData
+    private var posts = listOf<Post>()
 
-    // combine the load state of the two calls
+    // combines the load state of the two repos into one loading state for view consumption
     val loadState = postsRepository.loadState.combine(usersRepository.loadState) { postsLoadState, usersLoadState ->
         postsLoadState?.combined(usersLoadState)
     }.asLiveData()
 
-    private val posts = postsRepository.postsFlow(CacheMode.CacheAndUpdate).debounce(300).mapLatest {
-        val userIds = it.map { it.userId }.toSet()
-        usersRepository.fetchUsers(userIds, CacheMode.CacheOnly)
-        it
-    }
-
+    // filter the list of posts using the list of users, then create a view state to show on the UI
+    // as soon as the usersFlow value changes, mapLatest will be called, and the result will be
+    // sent via the exampleText LiveData
     val users = usersRepository.usersFlow().mapLatest { users ->
-        (posts.firstOrNull() ?: listOf()).map { post ->
+        posts.map { post ->
             PostViewState(post.id, post.title, users.firstOrNull { it.id == post.userId }?.name ?: "Unknown")
         }
     }.asLiveData()
+
+    init {
+        // maps the list of posts from the postsRepo to a private member variable
+        viewModelScope.launch {
+            postsRepository.postsFlow(CacheMode.CacheAndUpdate).collect {
+                posts = it.toMutableList()
+                if (posts.isNotEmpty()) {
+                    // when the posts aren't empty, fetch the list of users
+                    val userIds = it.map { it.userId }.toSet()
+                    usersRepository.fetchUsers(userIds, CacheMode.CacheOnly)
+                }
+            }
+        }
+    }
 
     // calls refresh, allowing the cached value to be displayed
     fun refreshTapped() = viewModelScope.launch {

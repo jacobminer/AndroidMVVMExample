@@ -38,7 +38,9 @@ class PostsRepository(
             val posts = postsService.fetchPosts()
             mutablePostsState.emit(posts)
             mutableLoadState.emit(LoadState.Success)
-            cacheService.updateCache(PostsKey, PostList(posts))
+            if (posts.isNotEmpty()) {
+                cacheService.updateCache(PostsKey, PostList(posts))
+            }
         } catch (e: Exception) {
             mutableLoadState.emit(LoadState.Error(e))
         }
