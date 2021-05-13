@@ -35,7 +35,7 @@ class MainViewModel @Inject constructor(
         }
         val userIds = posts.map { it.userId }.toSet()
         // always try to read from cache here
-        val users = usersRepository.fetchUsers(userIds, CacheMode.CacheOnly).singleOrNull()
+        val users = usersRepository.fetchUsers(userIds, CacheMode.CacheOnly).firstOrNull()
         // combine the data from the users repo with the data from the posts repo to create the post view state
         posts.map { post ->
             PostViewState(post.id, post.title, users?.firstOrNull { it.id == post.userId }?.name ?: "Unknown")

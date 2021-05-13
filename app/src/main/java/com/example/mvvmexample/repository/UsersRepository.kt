@@ -2,14 +2,10 @@ package com.example.mvvmexample.repository
 
 import com.example.mvvmexample.cache.CacheMode
 import com.example.mvvmexample.cache.CacheService
-import com.example.mvvmexample.model.User
 import com.example.mvvmexample.model.UserList
 import com.example.mvvmexample.service.UsersService
 import com.example.mvvmexample.ui.LoadState
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import java.lang.Exception
 
 /**
  * MVVMExample
@@ -24,7 +20,8 @@ class UsersRepository(
     val loadState = mutableLoadState.asSharedFlow()
 
     // Returns a one-off flow, which can then be subscribed to.
-    // TODO: 13/05/21: This will cause any object subscribed to mutableLoadState to update their load state, which may or may not be the behaviour you're looking for.
+    // TODO: 13/05/21: This will cause any object subscribed to mutableLoadState to update their load state.
+        // which may or may not be the behaviour we're generally looking for.
     fun fetchUsers(userIds: Set<Int>, cacheMode: CacheMode = CacheMode.CacheAndUpdate) = flow {
         mutableLoadState.emit(LoadState.Loading)
         val cached = cacheService.readFromCache(UsersKey, cacheMode)
