@@ -19,23 +19,22 @@ class UsersRepository(
     private val usersService: UsersService,
     private val cacheService: CacheService
 ) {
-    private val mutableUsersState = MutableSharedFlow<List<User>>(replay = 1)
     private val mutableLoadState = MutableSharedFlow<LoadState?>(replay = 1)
 
     val loadState = mutableLoadState.asSharedFlow()
 
-    fun fetchUsers(userIds: Set<Int>, cacheMode: CacheMode = CacheMode.CacheAndUpdate) = GlobalScope.launch {
+    fun fetchUsers(userIds: Set<Int>, cacheMode: CacheMode = CacheMode.CacheAndUpdate) = flow {
         mutableLoadState.emit(LoadState.Loading)
         val cached = cacheService.readFromCache(UsersKey, cacheMode)
         if (cached != null) {
-            mutableUsersState.emit((cached.result as UserList).users)
+            emit((cached.result as UserList).users)
             mutableLoadState.emit(LoadState.Success)
-            if (cached.shouldExit) { return@launch }
+            if (cached.shouldExit) { return@flow }
         }
 
         try {
             val users = usersService.fetchUsers().filter { userIds.contains(it.id) }
-            mutableUsersState.emit(users)
+            emit(users)
             mutableLoadState.emit(LoadState.Success)
             if (users.isNotEmpty()) {
                 cacheService.updateCache(UsersKey, UserList(users))
@@ -43,10 +42,6 @@ class UsersRepository(
         } catch (e: Exception) {
             mutableLoadState.emit(LoadState.Error(e))
         }
-    }
-
-    fun usersFlow(): SharedFlow<List<User>> {
-        return mutableUsersState.asSharedFlow()
     }
 
     companion object {
