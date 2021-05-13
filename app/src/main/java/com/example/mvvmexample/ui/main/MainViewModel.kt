@@ -27,7 +27,7 @@ class MainViewModel @Inject constructor(
     // combines the load state of the two repos into one loading state for view consumption
     val loadState = postsRepository.loadState.combine(usersRepository.loadState) { postsLoadState, usersLoadState ->
         postsLoadState?.combined(usersLoadState)
-    }.asLiveData()
+    }.asLiveData(viewModelScope.coroutineContext) // convert the flow into liveData, using the viewModel scope context
 
     // filter the list of posts using the list of users, then create a view state to show on the UI
     // as soon as the usersFlow value changes, mapLatest will be called, and the result will be
@@ -41,10 +41,11 @@ class MainViewModel @Inject constructor(
         }
         val userIds = posts.map { it.userId }.toSet()
         val users = usersRepository.fetchUsers(userIds, CacheMode.CacheOnly).singleOrNull()
+        // combine the data from the users repo with the data from the posts repo to create the post view state
         posts.map { post ->
             PostViewState(post.id, post.title, users?.firstOrNull { it.id == post.userId }?.name ?: "Unknown")
         }
-    }.asLiveData()
+    }.asLiveData(viewModelScope.coroutineContext)
 
     // calls refresh, allowing the cached value to be displayed
     fun refreshTapped() = viewModelScope.launch {

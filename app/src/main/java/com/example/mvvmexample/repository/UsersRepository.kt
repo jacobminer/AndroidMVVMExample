@@ -19,10 +19,12 @@ class UsersRepository(
     private val usersService: UsersService,
     private val cacheService: CacheService
 ) {
-    private val mutableLoadState = MutableSharedFlow<LoadState?>(replay = 1)
+    private val mutableLoadState = MutableStateFlow<LoadState?>(null)
 
     val loadState = mutableLoadState.asSharedFlow()
 
+    // returns a flow, which can then be subscribed to. This will cause any object subscribed to mutableLoadState
+    // to update their load state, which may or may not be the behaviour you're looking for.
     fun fetchUsers(userIds: Set<Int>, cacheMode: CacheMode = CacheMode.CacheAndUpdate) = flow {
         mutableLoadState.emit(LoadState.Loading)
         val cached = cacheService.readFromCache(UsersKey, cacheMode)
