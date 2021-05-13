@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.mvvmexample.cache.CacheMode
-import com.example.mvvmexample.model.Post
 import com.example.mvvmexample.repository.PostsRepository
 import com.example.mvvmexample.repository.UsersRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,24 +21,20 @@ class MainViewModel @Inject constructor(
     private val usersRepository: UsersRepository,
     private val postsRepository: PostsRepository
 ): ViewModel() {
-    private var fetchedPosts = listOf<Post>()
-
     // combines the load state of the two repos into one loading state for view consumption
     val loadState = postsRepository.loadState.combine(usersRepository.loadState) { postsLoadState, usersLoadState ->
         postsLoadState?.combined(usersLoadState)
     }.asLiveData(viewModelScope.coroutineContext) // convert the flow into liveData, using the viewModel scope context
 
-    // filter the list of posts using the list of users, then create a view state to show on the UI
-    // as soon as the usersFlow value changes, mapLatest will be called, and the result will be
-    // sent via the exampleText LiveData
+    // As soon as the postsFlow value changes, mapLatest will be called, and we'll re-fetch the list of users.
+    // Once we have both, we can combine them and send a PostViewState list out via LiveData.
     val posts = postsRepository.postsFlow(CacheMode.CacheAndUpdate).mapLatest { posts ->
-        // maps the list of posts from the postsRepo to a private member variable
-        fetchedPosts = posts
         // when the posts aren't empty, fetch the list of users
         if (posts.isEmpty()) {
             return@mapLatest listOf<PostViewState>()
         }
         val userIds = posts.map { it.userId }.toSet()
+        // always try to read from cache here
         val users = usersRepository.fetchUsers(userIds, CacheMode.CacheOnly).singleOrNull()
         // combine the data from the users repo with the data from the posts repo to create the post view state
         posts.map { post ->
@@ -52,9 +47,10 @@ class MainViewModel @Inject constructor(
         postsRepository.fetchPosts()
     }
 
-    // emulates deleting a post
+    // emulates deleting a post. In a real application, we'd probably pass in a PostViewState object into this function
+        // rather than using the LiveData.
     fun deleteTapped() = viewModelScope.launch {
-        val post = fetchedPosts.firstOrNull() ?: return@launch
+        val post = posts.value?.firstOrNull() ?: return@launch
         postsRepository.deletePost(post.id)
     }
 }

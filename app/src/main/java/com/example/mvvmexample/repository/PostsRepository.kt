@@ -52,16 +52,17 @@ class PostsRepository(
                 cacheService.updateCache(PostsKey, PostList(filteredPosts))
             }
         } catch (e: Exception) {
-            // it may be worth discussing how we expect error handling to work in this case?
+            // TODO: 13/05/21: it may be worth discussing how we expect error handling to work in this case?
                 // Flow has a `.catch` case which may allow us to pass
                 // exceptions up to the ViewModel level, rather than trying to keep track of it via mutableLoadState.
-
-            // unsure if we should update mutablePostsState here or not.
             mutableLoadState.emit(LoadState.Error(e))
         }
     }
 
     // fetches the posts when the flow is grabbed by a subscriber.
+    // TODO: 13/05/21: it might be worth coming up with a naming convention for functions returning a flow that we're expecting to share?
+        // we should theoretically be able to tell based on the return type
+        // (StateFlow for shared flows, Flow for one off flows that require params)
     fun postsFlow(cacheMode: CacheMode = CacheMode.CacheAndUpdate): StateFlow<List<Post>> {
         GlobalScope.launch { fetchPosts(cacheMode) }
         return mutablePostsState
@@ -69,6 +70,10 @@ class PostsRepository(
 
     // simulates deleting a post by adding it to a "deleted posts" list in memory
     // This automatically clears the cache and forces a refresh, so all subscribers will be updated.
+    // TODO: 13/05/21: This is another place where you could imagine a few different options for return value, if this were an actual service function:
+        // - the result of the delete request, making this a suspending function
+        // - a one off flow for the result of the delete request
+        // - nothing, and have any resulting error be sent out via the existing post's StateFlow
     fun deletePost(id: Int) {
         deletedPosts.add(id)
         cacheService.removeFromCache(PostsKey)
