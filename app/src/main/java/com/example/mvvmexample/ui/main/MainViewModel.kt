@@ -58,11 +58,9 @@ class MainViewModel @Inject constructor(
         postsRepository.fetchPosts()
     }
 
-    // emulates deleting a post. In a real application, we'd probably pass in a PostViewState object into this function
-        // rather than using the LiveData directly.
-    fun deleteTapped() = viewModelScope.launch {
-        val post = posts.value?.firstOrNull() ?: return@launch
-        postsRepository.deletePost(post.id).catch {
+    // emulates deleting a post.
+    fun deleteTapped(postId: Int) = viewModelScope.launch {
+        postsRepository.deletePost(postId).catch {
             // handle delete post error here
         }.collect() // no return value, but we need to call collect, otherwise the steam won't occur
     }
