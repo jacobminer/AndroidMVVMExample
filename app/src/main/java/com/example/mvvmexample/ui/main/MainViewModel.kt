@@ -29,7 +29,7 @@ class MainViewModel @Inject constructor(
     private val mutablePostsLoadState = MutableLiveData<LoadState>(LoadState.Loading)
     val postsLoadState = mutablePostsLoadState.asLiveData()
 
-    // As soon as the postsFlow value changes, mapLatest will be called, and we'll re-fetch the list of users.
+    // As soon as the postsFlow value changes, map will be called, and we'll re-fetch the list of users.
     // Once we have both, we can combine them and send a PostViewState list out via LiveData.
     val posts = postsRepository.postsFlow(CacheMode.CacheAndUpdate).catchError { e ->
         // handle any errors here
