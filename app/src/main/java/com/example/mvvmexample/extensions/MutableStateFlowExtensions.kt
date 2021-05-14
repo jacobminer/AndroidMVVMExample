@@ -28,8 +28,8 @@ sealed class ThrowableFlow<out T: Any> {
 }
 
 @Suppress("FunctionName")
-fun <T : Any> MutableStateThrowableFlow(value: T): MutableStateFlow<ThrowableFlow<T>> = MutableStateFlow(ThrowableFlow.success(value))
-fun <T: Any> StateFlow<ThrowableFlow<T>>.catchError(error: (Throwable) -> Unit): Flow<T> {
+fun <T : Any> MutableStateThrowableFlow(value: T): MutableStateThrowableFlow<T> = MutableStateFlow(ThrowableFlow.success(value))
+fun <T: Any> StateThrowableFlow<T>.catchError(error: (Throwable) -> Unit): Flow<T> {
     return mapNotNull { result ->
         when (result) {
             is ThrowableFlow.Error -> {
@@ -41,12 +41,15 @@ fun <T: Any> StateFlow<ThrowableFlow<T>>.catchError(error: (Throwable) -> Unit):
     }
 }
 
-suspend fun <T: Any> MutableStateFlow<ThrowableFlow<T>>.emitThrowable(throwable: Throwable) {
+suspend fun <T: Any> MutableStateThrowableFlow<T>.emitThrowable(throwable: Throwable) {
     emit(ThrowableFlow.error(throwable))
 }
-suspend fun <T: Any> MutableStateFlow<ThrowableFlow<T>>.emitData(data: T) {
+suspend fun <T: Any> MutableStateThrowableFlow<T>.emitData(data: T) {
     emit(ThrowableFlow.success(data))
 }
-suspend fun <T: Any> MutableStateFlow<ThrowableFlow<T>>.emitFrom(onError: (suspend (Throwable) -> Unit)? = null, function: suspend () -> T) {
+suspend fun <T: Any> MutableStateThrowableFlow<T>.emitFrom(onError: (suspend (Throwable) -> Unit)? = null, function: suspend () -> T) {
     emit(ThrowableFlow.from(function, onError))
 }
+
+typealias StateThrowableFlow<T> = StateFlow<ThrowableFlow<T>>
+typealias MutableStateThrowableFlow<T> = MutableStateFlow<ThrowableFlow<T>>
