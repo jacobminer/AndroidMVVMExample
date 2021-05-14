@@ -34,6 +34,7 @@ class MainViewModel @Inject constructor(
     val posts = postsRepository.postsFlow(CacheMode.CacheAndUpdate).catchError { e ->
         // handle any errors here
         // update the loading state
+        e.printStackTrace()
         mutablePostsLoadState.postValue(LoadState.Error(e))
     }.map { posts ->
         // update the loading state
@@ -42,8 +43,9 @@ class MainViewModel @Inject constructor(
         if (posts.isEmpty()) { return@map listOf<PostViewState>() }
         val userIds = posts.map { it.userId }.toSet()
         // always try to read from cache here
-        val users = usersRepository.fetchUsers(userIds, CacheMode.CacheOnly).catch {
+        val users = usersRepository.fetchUsers(userIds, CacheMode.CacheOnly).catch { e ->
             // handle errors when fetching users here
+            e.printStackTrace()
         }.firstOrNull() // just use the first result
         // update the loading state
         mutablePostsLoadState.postValue(LoadState.Success)
@@ -55,8 +57,9 @@ class MainViewModel @Inject constructor(
 
     // emulates deleting a post.
     fun deleteTapped(postId: Int) = viewModelScope.launch {
-        postsRepository.deletePost(postId).catch {
+        postsRepository.deletePost(postId).catch { e ->
             // handle delete post error here
+            e.printStackTrace()
         }.collect() // no return value, but we need to call collect, otherwise the steam won't occur
     }
 }
