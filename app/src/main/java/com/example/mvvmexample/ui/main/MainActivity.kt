@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mvvmexample.ui.LoadState
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,7 +40,7 @@ class MainActivity : AppCompatActivity() {
             val loadState = viewModel.postsLoadState.observeAsState()
             val postsState = viewModel.posts.observeAsState()
             val posts = postsState.value ?: listOf()
-            PostsScreen(loadState = loadState.value!!, posts = posts)
+            PostsScreen(loadState = loadState.value ?: LoadState.Loading, posts = posts)
         }
     }
 
@@ -53,18 +54,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
-    fun LoadingIndicator() {
-        Box(Modifier.fillMaxWidth().fillMaxHeight(), contentAlignment = Alignment.Center) {
+    private fun LoadingIndicator() {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
     }
 
     @Composable
-    fun PostsList(posts: List<PostViewState>) {
+    private fun PostsList(posts: List<PostViewState>) {
         if (posts.isEmpty()) {
-            Text(text = "No items")
+            Box(
+                Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text(text = "No items")
+            }
         } else {
-            LazyColumn(contentPadding = PaddingValues(5.dp)) {
+            LazyColumn(contentPadding = PaddingValues(10.dp)) {
                 items(posts, { it.id }) { post ->
                     PostView(post)
                 }
@@ -73,17 +82,42 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
-    fun PostView(post: PostViewState) {
+    private fun PostView(post: PostViewState) {
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = post.text, modifier = Modifier.weight(2f).padding(end = 20.dp))
-            Text(text = post.user, maxLines = 1, modifier = Modifier.weight(1f).padding(end = 10.dp))
+            Text(text = post.text, modifier = Modifier
+                .weight(2f)
+                .padding(end = 20.dp))
+            Text(text = post.user, maxLines = 1, modifier = Modifier
+                .weight(1f)
+                .padding(end = 10.dp))
             Button(onClick = { viewModel.deleteTapped(post.id) }) {
                 Text("X")
             }
         }
+    }
+
+    @Preview
+    @Composable
+    private fun LoadingIndicatorPreview() {
+        LoadingIndicator()
+    }
+
+    @Preview
+    @Composable
+    private fun PostsEmptyListPreview() {
+        PostsList(posts = listOf())
+    }
+
+    @Preview
+    @Composable
+    fun PostsListPreview() {
+        PostsList(posts = listOf(
+            PostViewState(0, "Test", "Test User"),
+            PostViewState(1, "Test 2", "Test User 2")
+        ))
     }
 }
