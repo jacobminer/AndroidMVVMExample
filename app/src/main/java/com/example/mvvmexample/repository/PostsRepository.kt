@@ -28,7 +28,7 @@ class PostsRepository(
     // otherwise if we used a viewModel scope, it's possible that a shared request could get cancelled
     // if one of the viewModels was destroyed.
     // This function could arguably be private, as long as we were willing to create another function for "refresh" behaviour.
-    fun fetchPosts(cacheMode: CacheMode = CacheMode.CacheAndUpdate) = GlobalScope.launch {
+    private fun fetchPosts(cacheMode: CacheMode = CacheMode.CacheAndUpdate) = GlobalScope.launch {
         val cached = cacheService.readFromCache(PostsKey, cacheMode)
         if (cached != null) {
             mutablePostsFlow.emitData((cached.result as PostList).posts)

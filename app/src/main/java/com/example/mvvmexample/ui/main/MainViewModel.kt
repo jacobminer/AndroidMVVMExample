@@ -53,11 +53,6 @@ class MainViewModel @Inject constructor(
         }
     }.asLiveData(viewModelScope.coroutineContext) // convert the flow into liveData, using the viewModel scope context
 
-    // calls refresh, allowing the cached value to be displayed
-    fun refreshTapped() = viewModelScope.launch {
-        postsRepository.fetchPosts()
-    }
-
     // emulates deleting a post.
     fun deleteTapped(postId: Int) = viewModelScope.launch {
         postsRepository.deletePost(postId).catch {
