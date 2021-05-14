@@ -10,6 +10,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
 /**
@@ -21,11 +22,11 @@ class PostsRepository(
     private val cacheService: CacheService
 ) {
     // StateFlow is the flow equivalent to LiveData
-    private val mutablePostsState = MutableStateFlow<List<Post>>(listOf())
-    private val mutableLoadState = MutableStateFlow<LoadState?>(null)
+    private val mutablePostsFlow = MutableStateFlow<List<Post>>(listOf())
+    private val mutablePostsLoadFlow = MutableStateFlow<LoadState?>(null)
 
-    // non-mutable version of the state flow
-    val loadState = mutableLoadState.asStateFlow()
+    // non-mutable version of the posts' loading state flow
+    val postsLoadState = mutablePostsLoadFlow.asStateFlow()
 
     // in memory list of deleted posts
     private val deletedPosts = mutableSetOf<Int>()
@@ -35,19 +36,19 @@ class PostsRepository(
     // if one of the viewModels was destroyed.
     // This function could arguably be private, as long as we were willing to create another function for "refresh" behaviour.
     fun fetchPosts(cacheMode: CacheMode = CacheMode.CacheAndUpdate) = GlobalScope.launch {
-        mutableLoadState.emit(LoadState.Loading)
+        mutablePostsLoadFlow.emit(LoadState.Loading)
         val cached = cacheService.readFromCache(PostsKey, cacheMode)
         if (cached != null) {
-            mutablePostsState.emit((cached.result as PostList).posts)
-            mutableLoadState.emit(LoadState.Success)
+            mutablePostsFlow.emit((cached.result as PostList).posts)
+            mutablePostsLoadFlow.emit(LoadState.Success)
             if (cached.shouldExit) { return@launch }
         }
 
         try {
             val posts = postsService.fetchPosts()
             val filteredPosts = posts.filter { !deletedPosts.contains(it.id) }
-            mutablePostsState.emit(filteredPosts)
-            mutableLoadState.emit(LoadState.Success)
+            mutablePostsFlow.emit(filteredPosts)
+            mutablePostsLoadFlow.emit(LoadState.Success)
             if (filteredPosts.isNotEmpty()) {
                 cacheService.updateCache(PostsKey, PostList(filteredPosts))
             }
@@ -55,7 +56,7 @@ class PostsRepository(
             // TODO: 13/05/21: it may be worth discussing how we expect error handling to work in this case?
                 // Flow has a `.catch` case which may allow us to pass
                 // exceptions up to the ViewModel level, rather than trying to keep track of it via mutableLoadState.
-            mutableLoadState.emit(LoadState.Error(e))
+            mutablePostsLoadFlow.emit(LoadState.Error(e))
         }
     }
 
@@ -65,7 +66,7 @@ class PostsRepository(
         // (StateFlow for shared flows, Flow for one off flows that require params)
     fun postsFlow(cacheMode: CacheMode = CacheMode.CacheAndUpdate): StateFlow<List<Post>> {
         GlobalScope.launch { fetchPosts(cacheMode) }
-        return mutablePostsState
+        return mutablePostsFlow
     }
 
     // simulates deleting a post by adding it to a "deleted posts" list in memory
@@ -74,10 +75,17 @@ class PostsRepository(
         // - the result of the delete request, making this a suspending function
         // - a one off flow for the result of the delete request
         // - nothing, and have any resulting error be sent out via the existing post's StateFlow
-    fun deletePost(id: Int) {
-        deletedPosts.add(id)
-        cacheService.removeFromCache(PostsKey)
-        GlobalScope.launch { fetchPosts(CacheMode.CacheAndUpdate) }
+    fun deletePost(id: Int) = flow {
+        val successful = true
+        emit(LoadState.Loading)
+        if (successful) {
+            deletedPosts.add(id)
+            cacheService.removeFromCache(PostsKey)
+            emit(null)
+            fetchPosts(CacheMode.CacheAndUpdate)
+        } else {
+            emit(Exception("Failed to update"))
+        }
     }
 
     companion object {

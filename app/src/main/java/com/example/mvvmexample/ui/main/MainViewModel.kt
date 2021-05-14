@@ -22,7 +22,7 @@ class MainViewModel @Inject constructor(
     private val postsRepository: PostsRepository
 ): ViewModel() {
     // combines the load state of the two repos into one loading state for view consumption
-    val loadState = postsRepository.loadState.combine(usersRepository.loadState) { postsLoadState, usersLoadState ->
+    val loadState = postsRepository.postsLoadState.combine(usersRepository.loadState) { postsLoadState, usersLoadState ->
         postsLoadState?.combined(usersLoadState)
     }.asLiveData(viewModelScope.coroutineContext) // convert the flow into liveData, using the viewModel scope context
 
