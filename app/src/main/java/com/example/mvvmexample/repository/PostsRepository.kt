@@ -2,15 +2,12 @@ package com.example.mvvmexample.repository
 
 import com.example.mvvmexample.cache.CacheMode
 import com.example.mvvmexample.cache.CacheService
+import com.example.mvvmexample.extensions.*
 import com.example.mvvmexample.model.Post
 import com.example.mvvmexample.model.PostList
 import com.example.mvvmexample.service.PostsService
-import com.example.mvvmexample.ui.LoadState
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
@@ -22,11 +19,7 @@ class PostsRepository(
     private val cacheService: CacheService
 ) {
     // StateFlow is the flow equivalent to LiveData
-    private val mutablePostsFlow = MutableStateFlow<List<Post>>(listOf())
-    private val mutablePostsLoadFlow = MutableStateFlow<LoadState?>(null)
-
-    // non-mutable version of the posts' loading state flow
-    val postsLoadState = mutablePostsLoadFlow.asStateFlow()
+    private val mutablePostsFlow = MutableStateThrowableFlow<List<Post>>(listOf())
 
     // in memory list of deleted posts
     private val deletedPosts = mutableSetOf<Int>()
@@ -36,27 +29,19 @@ class PostsRepository(
     // if one of the viewModels was destroyed.
     // This function could arguably be private, as long as we were willing to create another function for "refresh" behaviour.
     fun fetchPosts(cacheMode: CacheMode = CacheMode.CacheAndUpdate) = GlobalScope.launch {
-        mutablePostsLoadFlow.emit(LoadState.Loading)
         val cached = cacheService.readFromCache(PostsKey, cacheMode)
         if (cached != null) {
-            mutablePostsFlow.emit((cached.result as PostList).posts)
-            mutablePostsLoadFlow.emit(LoadState.Success)
+            mutablePostsFlow.emitData((cached.result as PostList).posts)
             if (cached.shouldExit) { return@launch }
         }
 
-        try {
+        mutablePostsFlow.emitFrom {
             val posts = postsService.fetchPosts()
             val filteredPosts = posts.filter { !deletedPosts.contains(it.id) }
-            mutablePostsFlow.emit(filteredPosts)
-            mutablePostsLoadFlow.emit(LoadState.Success)
             if (filteredPosts.isNotEmpty()) {
                 cacheService.updateCache(PostsKey, PostList(filteredPosts))
             }
-        } catch (e: Exception) {
-            // TODO: 13/05/21: it may be worth discussing how we expect error handling to work in this case?
-                // Flow has a `.catch` case which may allow us to pass
-                // exceptions up to the ViewModel level, rather than trying to keep track of it via mutableLoadState.
-            mutablePostsLoadFlow.emit(LoadState.Error(e))
+            filteredPosts
         }
     }
 
@@ -64,27 +49,22 @@ class PostsRepository(
     // TODO: 13/05/21: it might be worth coming up with a naming convention for functions returning a flow that we're expecting to share?
         // we should theoretically be able to tell based on the return type
         // (StateFlow for shared flows, Flow for one off flows that require params)
-    fun postsFlow(cacheMode: CacheMode = CacheMode.CacheAndUpdate): StateFlow<List<Post>> {
+    fun postsFlow(cacheMode: CacheMode = CacheMode.CacheAndUpdate): StateThrowableFlow<List<Post>> {
         GlobalScope.launch { fetchPosts(cacheMode) }
         return mutablePostsFlow
     }
 
     // simulates deleting a post by adding it to a "deleted posts" list in memory
     // This automatically clears the cache and forces a refresh, so all subscribers will be updated.
-    // TODO: 13/05/21: This is another place where you could imagine a few different options for return value, if this were an actual service function:
-        // - the result of the delete request, making this a suspending function
-        // - a one off flow for the result of the delete request
-        // - nothing, and have any resulting error be sent out via the existing post's StateFlow
     fun deletePost(id: Int) = flow {
         val successful = true
-        emit(LoadState.Loading)
         if (successful) {
             deletedPosts.add(id)
             cacheService.removeFromCache(PostsKey)
-            emit(null)
+            emit(Unit)
             fetchPosts(CacheMode.CacheAndUpdate)
         } else {
-            emit(Exception("Failed to update"))
+            throw RuntimeException("Fake exception")
         }
     }
 
