@@ -16,13 +16,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.mvvmexample.ui.LoadState
+import com.example.mvvmexample.ui.ContentLoadViewState
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     // lifecycle aware viewModel
-    private val viewModel: MainViewModel by viewModels()
+    private val viewModel: PostsViewModel by viewModels()
 
     // if we were using viewBinding instead of Compose
 //    private val binding by viewBinding(ActivityMainBinding::inflate)
@@ -40,16 +40,16 @@ class MainActivity : AppCompatActivity() {
             val loadState = viewModel.postsLoadState.observeAsState()
             val postsState = viewModel.posts.observeAsState()
             val posts = postsState.value ?: listOf()
-            PostsScreen(loadState = loadState.value ?: LoadState.Loading, posts = posts)
+            PostsScreen(loadState = loadState.value ?: ContentLoadViewState.Loading, posts = posts)
         }
     }
 
     @Composable
-    private fun PostsScreen(loadState: LoadState, posts: List<PostViewState>) {
+    private fun PostsScreen(loadState: ContentLoadViewState, posts: List<PostViewState>) {
         when (loadState) {
-            is LoadState.Error -> TODO()
-            LoadState.Loading -> LoadingIndicator()
-            LoadState.Success -> PostsList(posts)
+            is ContentLoadViewState.Error -> TODO()
+            ContentLoadViewState.Loading -> LoadingIndicator()
+            ContentLoadViewState.Success -> PostsList(posts)
         }
     }
 

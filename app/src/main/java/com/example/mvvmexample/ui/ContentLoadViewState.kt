@@ -4,12 +4,12 @@ package com.example.mvvmexample.ui
  * MVVMExample
  * Created by jake on 30/04/21, 3:46 PM
  */
-sealed class LoadState {
-    data class Error(val throwable: Throwable): LoadState()
-    object Loading: LoadState()
-    object Success: LoadState()
+sealed class ContentLoadViewState {
+    data class Error(val throwable: Throwable): ContentLoadViewState()
+    object Loading: ContentLoadViewState()
+    object Success: ContentLoadViewState()
 
-    fun combined(otherState: LoadState?): LoadState {
+    fun combined(otherState: ContentLoadViewState?): ContentLoadViewState {
         if (otherState == null) return this
         return when {
             this is Error || otherState is Error -> {
