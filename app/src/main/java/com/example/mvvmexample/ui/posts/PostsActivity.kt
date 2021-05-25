@@ -1,4 +1,4 @@
-package com.example.mvvmexample.ui.main
+package com.example.mvvmexample.ui.posts
 
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -20,7 +20,7 @@ import com.example.mvvmexample.ui.ContentLoadViewState
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class PostsActivity : AppCompatActivity() {
     // lifecycle aware viewModel
     private val viewModel: PostsViewModel by viewModels()
 

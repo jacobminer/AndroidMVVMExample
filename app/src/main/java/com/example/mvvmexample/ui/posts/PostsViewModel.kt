@@ -1,4 +1,4 @@
-package com.example.mvvmexample.ui.main
+package com.example.mvvmexample.ui.posts
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel

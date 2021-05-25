@@ -1,4 +1,4 @@
-package com.example.mvvmexample.ui.main
+package com.example.mvvmexample.ui.posts
 
 /**
  * MVVMExample
