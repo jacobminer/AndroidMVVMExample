@@ -1,5 +1,6 @@
 package com.example.mvvmexample.repository
 
+import com.example.mvvmexample.cache.CacheKey
 import com.example.mvvmexample.cache.CacheMode
 import com.example.mvvmexample.cache.CacheService
 import com.example.mvvmexample.extensions.*
@@ -69,6 +70,6 @@ class PostsRepository(
     }
 
     companion object {
-        private const val PostsKey = "posts"
+        private val PostsKey = CacheKey<PostList>("posts")
     }
 }

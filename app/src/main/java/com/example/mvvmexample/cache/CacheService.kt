@@ -8,9 +8,9 @@ import android.os.Parcelable
  */
 // a service implementation of a simple cache
 interface CacheService {
-    suspend fun readFromCache(key: String, cacheMode: CacheMode): CacheResult<Parcelable>?
-    fun updateCache(key: String, value: Parcelable)
-    fun removeFromCache(key: String)
+    suspend fun <T: Parcelable> readFromCache(key: CacheKey<T>, cacheMode: CacheMode): CacheResult<T>?
+    fun <T: Parcelable> updateCache(key: CacheKey<T>, value: T)
+    fun <T: Parcelable> removeFromCache(key: CacheKey<T>)
     fun clearCache()
 }
 

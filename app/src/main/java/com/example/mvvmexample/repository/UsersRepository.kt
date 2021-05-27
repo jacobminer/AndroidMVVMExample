@@ -1,5 +1,6 @@
 package com.example.mvvmexample.repository
 
+import com.example.mvvmexample.cache.CacheKey
 import com.example.mvvmexample.cache.CacheMode
 import com.example.mvvmexample.cache.CacheService
 import com.example.mvvmexample.model.UserList
@@ -29,6 +30,6 @@ class UsersRepository(
     }
 
     companion object {
-        private const val UsersKey = "users"
+        private val UsersKey = CacheKey<UserList>("users")
     }
 }

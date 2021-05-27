@@ -9,12 +9,12 @@ class InMemoryCacheService: CacheService {
     private val cachedData = hashMapOf<String, Parcelable>()
 
     // read from the cache
-    override suspend fun readFromCache(key: String, cacheMode: CacheMode): CacheResult<Parcelable>? {
+    override suspend fun <T: Parcelable> readFromCache(key: CacheKey<T>, cacheMode: CacheMode): CacheResult<T>? {
         // add a short delay to emulate a slow disk
         delay(100)
 
         // check if we have cached data, if not, no cached result
-        val cached = cachedData[key] ?: return null
+        val cached = cachedData[key.key] as? T ?: return null
         // build a cacheResult based on the cache mode (or cache time)
         return when (cacheMode) {
             CacheMode.CacheAndUpdate -> {
@@ -30,8 +30,8 @@ class InMemoryCacheService: CacheService {
     }
 
     // update the cached data
-    override fun updateCache(key: String, value: Parcelable) {
-        cachedData[key] = value
+    override fun <T: Parcelable> updateCache(key: CacheKey<T>, value: T) {
+        cachedData[key.key] = value
     }
 
     // clear the cache entirely
@@ -40,7 +40,7 @@ class InMemoryCacheService: CacheService {
     }
 
     // remove a single value from the cache
-    override fun removeFromCache(key: String) {
-        cachedData.remove(key)
+    override fun <T: Parcelable> removeFromCache(key: CacheKey<T>) {
+        cachedData.remove(key.key)
     }
 }
